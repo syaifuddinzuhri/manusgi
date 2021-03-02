@@ -1,0 +1,325 @@
+import { handle } from "./handle_module";
+
+class Jurusan {
+    dataTable() {
+        handle.setup();
+        $("#tableJurusan").DataTable({
+            responsive: true,
+            autoWidth: false,
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: APP_URL + "/admin/jurusan",
+            },
+            columns: [
+                {
+                    data: "DT_RowIndex",
+                    name: "DT_RowIndex",
+                    className: "text-center",
+                    width: "4%",
+                },
+                {
+                    data: "thumbnail",
+                    className: "text-center",
+                    render: function (data) {
+                        if (data != null) {
+                            return (
+                                '<img src="' +
+                                data +
+                                '" class="img-responsive" style="width: 50px"/>'
+                            );
+                        } else {
+                            return "";
+                        }
+                    },
+                },
+                {
+                    data: "nama",
+                    name: "nama",
+                },
+                {
+                    data: "action",
+                    name: "action",
+                    className: "text-center",
+                    orderable: false,
+                    searchable: false,
+                },
+            ],
+        });
+    }
+
+    changeFile(form, input) {
+        $("#" + input).on("change", function (e) {
+            e.preventDefault();
+
+            if (this.files && this.files[0]) {
+                var name = this.files[0]["name"];
+                $("#" + form + " label[for='customFile']").text(name);
+                var reader = new FileReader();
+                reader.onload = (e) => {
+                    $("#previewThumbJurusan").attr("src", e.target.result);
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+
+    addJurusan() {
+        handle.setup();
+        $("#formAddJurusan").validate({
+            rules: {
+                nama: {
+                    required: true,
+                },
+            },
+            messages: {
+                nama: {
+                    required: "Nama jurusan tidak boleh kosong.",
+                },
+            },
+            errorElement: "span",
+            errorPlacement: (error, element) => {
+                error.addClass("invalid-feedback");
+                element.closest(".form-group").append(error);
+            },
+            highlight: (element, errorClass, validClass) => {
+                $(element).addClass("is-invalid");
+            },
+            unhighlight: (element, errorClass, validClass) => {
+                $(element).removeClass("is-invalid");
+            },
+            submitHandler: function (form) {
+                const j = new Jurusan();
+                var file = $("#thumbnail-jurusan")[0].files;
+                if (file.length > 0) {
+                    var fileExtension = ["jpeg", "jpg", "png"];
+                    var getExtension = file[0]["name"]
+                        .split(".")
+                        .pop()
+                        .toLowerCase();
+                    var getSize = file[0]["size"];
+                    if ($.inArray(getExtension, fileExtension) == -1) {
+                        toastr.error(
+                            "Format gambar harus berupa : " +
+                                fileExtension.join(", ")
+                        );
+                    } else if (getSize > 5000000) {
+                        toastr.error("Ukuran gambar maksmimum 5mb");
+                    } else {
+                        j._storeJurusan(form);
+                    }
+                } else {
+                    j._storeJurusan(form);
+                }
+            },
+        });
+    }
+
+    _storeJurusan(form) {
+        handle.setup();
+        $.ajax({
+            url: APP_URL + "/admin/jurusan",
+            type: "POST",
+            processData: false,
+            contentType: false,
+            cache: false,
+            data: new FormData(form),
+            beforeSend: function () {
+                $("#formAddJurusan").find($(".btn-loading")).show();
+                $("#formAddJurusan").find($(".btn-submit")).hide();
+            },
+            success: function (res) {
+                $("#formAddJurusan").find($(".btn-loading")).hide();
+                $("#formAddJurusan").find($(".btn-submit")).show();
+                if (res) {
+                    $("#formAddJurusan")[0].reset();
+                    $("#tableJurusan").DataTable().ajax.reload();
+                    $("#addJurusanModal").modal("hide");
+                    $("#formAddJurusan label[for='customFile']").text(
+                        "Choose File"
+                    );
+                    toastr.success("Jurusan berhasil ditambahkan!");
+                }
+            },
+            error: (e, x, settings, exception) => {
+                $("#formAddJurusan").find($(".btn-loading")).hide();
+                $("#formAddJurusan").find($(".btn-submit")).show();
+                handle.errorhandle(e, x, settings, exception);
+            },
+        });
+    }
+
+    deleteJurusan() {
+        handle.setup();
+        var sid = "";
+        $("#tableJurusan").on("click", ".delete", function (e) {
+            sid = $(this).closest("tr").attr("id");
+        });
+
+        $("#formDeleteJurusan").on("submit", function (e) {
+            e.preventDefault();
+
+            var url = "/admin/jurusan/" + sid;
+            var form = $(this);
+            $.ajax({
+                url: APP_URL + url,
+                type: "DELETE",
+                data: form.serialize(),
+                beforeSend: function () {
+                    $("#deleteJurusanModal").find($(".btn-loading")).show();
+                    $("#deleteJurusanModal").find($(".btn-submit")).hide();
+                },
+                success: function (res) {
+                    $("#deleteJurusanModal").find($(".btn-loading")).hide();
+                    $("#deleteJurusanModal").find($(".btn-submit")).show();
+                    if (res) {
+                        $("#tableJurusan").DataTable().ajax.reload();
+                        $("#deleteJurusanModal").modal("hide");
+                        toastr.success("Jurusan berhasil dihapus!");
+                    }
+                },
+                error: (e, x, settings, exception) => {
+                    $("#deleteJurusanModal").find($(".btn-loading")).hide();
+                    $("#deleteJurusanModal").find($(".btn-submit")).show();
+                    var msg = "Hapus data gagal ";
+                    handle.errorhandle(e, x, settings, exception, msg);
+                },
+            });
+            e.preventDefault();
+        });
+    }
+
+    editJurusan() {
+        handle.setup();
+        var id = "";
+        $("#tableJurusan").on("click", ".edit-jurusan", function () {
+            id = $(this).closest("tr").attr("id");
+            var data = $(this)
+                .closest("tr")
+                .find("td")
+                .map(function () {
+                    return $(this).text();
+                });
+            $("#formEditJurusan").find($("#nama2")).val(data[2]);
+        });
+
+        $("#formEditJurusan").validate({
+            rules: {
+                nama2: {
+                    required: true,
+                },
+            },
+            messages: {
+                nama2: {
+                    required: "Nama Jurusan tidak boleh kosong",
+                },
+            },
+            errorElement: "span",
+            errorPlacement: (error, element) => {
+                error.addClass("invalid-feedback");
+                element.closest(".form-group").append(error);
+            },
+            highlight: (element, errorClass, validClass) => {
+                $(element).addClass("is-invalid");
+            },
+            unhighlight: (element, errorClass, validClass) => {
+                $(element).removeClass("is-invalid");
+            },
+            submitHandler: function (form) {
+                const jur = new Jurusan();
+                var file = $("#thumb-jurusan")[0].files;
+                if (file.length > 0) {
+                    var fileExtension = ["jpeg", "jpg", "png"];
+                    var getExtension = file[0]["name"]
+                        .split(".")
+                        .pop()
+                        .toLowerCase();
+                    var getSize = file[0]["size"];
+                    if ($.inArray(getExtension, fileExtension) == -1) {
+                        toastr.error(
+                            "Format gambar harus berupa : " +
+                                fileExtension.join(", ")
+                        );
+                    } else if (getSize > 5000000) {
+                        toastr.error("Ukuran gambar maksmimum 5mb");
+                    } else {
+                        $("#formEditJurusan")
+                            .find($("input[name='_method']"))
+                            .val("POST");
+                        jur._updateFile(form, id);
+                    }
+                } else {
+                    jur._updateJurusan(id);
+                }
+            },
+        });
+    }
+
+    _updateFile(form, id) {
+        handle.setup();
+        $.ajax({
+            url: APP_URL + "/admin/jurusan/update-thumbnail/" + id,
+            type: "POST",
+            processData: false,
+            contentType: false,
+            cache: false,
+            data: new FormData(form),
+            beforeSend: function () {
+                $("#formEditJurusan").find($(".btn-loading")).show();
+                $("#formEditJurusan").find($(".btn-submit")).hide();
+            },
+            success: function (res) {
+                $("#formEditJurusan").find($(".btn-loading")).hide();
+                $("#formEditJurusan").find($(".btn-submit")).show();
+                if (res) {
+                    $("#tableJurusan").DataTable().ajax.reload();
+                    $("#formEditJurusan")[0].reset();
+                    $("#editJurusanModal").modal("hide");
+                    toastr.success("Jurusan berhasil diupdate!");
+                    $("#formEditJurusan label[for='customFile']").text(
+                        "Choose File"
+                    );
+                }
+            },
+            error: (e, x, settings, exception) => {
+                $("#formEditJurusan").find($(".btn-loading")).hide();
+                $("#formEditJurusan").find($(".btn-submit")).show();
+                handle.errorhandle(e, x, settings, exception);
+            },
+        });
+    }
+
+    _updateJurusan(id) {
+        handle.setup();
+        $.ajax({
+            url: APP_URL + "/admin/jurusan/" + id,
+            type: "PUT",
+            data: {
+                nama: $("#nama2").val(),
+            },
+            beforeSend: function () {
+                $("#formEditJurusan").find($(".btn-loading")).show();
+                $("#formEditJurusan").find($(".btn-submit")).hide();
+            },
+            success: function (res) {
+                $("#formEditJurusan").find($(".btn-loading")).hide();
+                $("#formEditJurusan").find($(".btn-submit")).show();
+                if (res) {
+                    $("#tableJurusan").DataTable().ajax.reload();
+                    $("#formEditJurusan")[0].reset();
+                    $("#editJurusanModal").modal("hide");
+                    $("#formEditJurusan label[for='customFile']").text(
+                        "Choose File"
+                    );
+                    toastr.success("Jurusan berhasil diupdate!");
+                }
+            },
+            error: (e, x, settings, exception) => {
+                $("#formEditJurusan").find($(".btn-loading")).hide();
+                $("#formEditJurusan").find($(".btn-submit")).show();
+                handle.errorhandle(e, x, settings, exception);
+            },
+        });
+    }
+}
+export const jurusan = new Jurusan();

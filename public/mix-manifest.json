@@ -1,0 +1,16 @@
+{
+    "/js/backend/script.js": "/js/backend/script.js",
+    "/js/backend/user.js": "/js/backend/user.js",
+    "/js/backend/sejarah.js": "/js/backend/sejarah.js",
+    "/js/backend/visimisi.js": "/js/backend/visimisi.js",
+    "/js/backend/kategori.js": "/js/backend/kategori.js",
+    "/js/backend/tag.js": "/js/backend/tag.js",
+    "/js/backend/berita.js": "/js/backend/berita.js",
+    "/js/backend/pengumuman.js": "/js/backend/pengumuman.js",
+    "/js/backend/prestasi.js": "/js/backend/prestasi.js",
+    "/js/backend/aplikasi.js": "/js/backend/aplikasi.js",
+    "/js/backend/album.js": "/js/backend/album.js",
+    "/js/backend/jurusan.js": "/js/backend/jurusan.js",
+    "/js/backend/sarpras.js": "/js/backend/sarpras.js",
+    "/js/backend/pendidik.js": "/js/backend/pendidik.js"
+}
